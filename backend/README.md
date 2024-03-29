@@ -245,7 +245,7 @@ Responda às perguntas de acordo:
 
 Deverá ser criado um novo arquivo dentro `src/articles` diretório com todo o boilerplate para seus endpoints REST
 
-IMAGEM
+IMAGEM ARTICLE CRUD
 
 O `SwaggerModule` pesquisas para todos `@Body()`, `@Query()`, e `@Param()` decoradores nos manipuladores de rotas para gerar esta página da API.
 
@@ -401,3 +401,43 @@ Este endpoint é excluir artigos existentes. O manipulador de rota para este pon
     });
   }
 ```
+
+# Agrupe os endpoints juntos em Swagger
+
+Adicionar um `@ApiTags` decorador para o `ArticlesController` classe, para agrupar todos os endpoint articles juntos no `Swagger`:
+
+## Atualizar os tipos de resposta do Swagger
+
+A *Respostas* guia sob cada endpoint em `Swagger`, você vai achar que o Descrição está vazio. Isso ocorre porque o Swagger não conhece os tipos de resposta para nenhum dos endpoints
+
+```bash
+import { ApiProperty } from '@nestjs/swagger';
+import { Article } from '@prisma/client';
+
+export class ArticleEntity implements Article {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  title: string;
+
+  @ApiProperty({ required: false, nullable: true })
+  description: string | null;
+
+  @ApiProperty()
+  body: string;
+
+  @ApiProperty()
+  published: boolean;
+
+  @ApiProperty()
+  createdAt: Date;
+
+  @ApiProperty()
+  updatedAt: Date;
+}
+```
+
+Esta é uma implementação do `Article` tipo gerado pelo `Prisma Client`, com `@ApiProperty` decoradores adicionados a cada propriedade.
+
+IMAGEM RESPONSE TYPES

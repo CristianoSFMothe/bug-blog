@@ -1,6 +1,5 @@
 # compiled output
 /backend/dist
-/node_modules
 /backend/node_modules
 
 # Logs
@@ -14,6 +13,8 @@
 
 # OS
 /backend/.DS_Store
+
+/backend/.env
 
 # Tests
 /backend/coverage

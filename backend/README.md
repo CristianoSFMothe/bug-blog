@@ -488,9 +488,12 @@ Os pipes têm dois casos de uso típicos:
 * *Validação*: Avalie os dados de entrada e, se válidos, passe-os inalterados; caso contrário, lance uma exceção quando os dados estiverem incorretos.
 * *Transformação*: Transforme os dados de entrada para o formulário desejado (por exemplo, de string para inteiro).
 
-IMAGEM PIPE 1
+<img src="https://github.com/CristianoSFMothe/bug-blog/assets/68359459/92f2184c-37e4-4910-be8b-2aa18a1ef2c8" alt="Pipes NestJs">
 
-IMAGEM PIPE 2
+---
+
+<img src="https://github.com/CristianoSFMothe/bug-blog/assets/68359459/289b18b6-088c-4761-9458-bf13062aca35" alt="Pipes Nestjs">
+
 
 ## Configurar ValidationPipe globalmente
 
@@ -540,6 +543,7 @@ Usar o class-validator pacote para adicionar decoradores de validação CreateAr
 
 Este diagrama explica o que o `ValidationPipe` está fazendo sob o capô para entradas inválidas para o /articles rota:
 
-IMAGEM PIPE 3
+<img src="https://github.com/CristianoSFMothe/bug-blog/assets/68359459/4316f961-db4f-4366-8590-7de5e1151fcf" alt="Pipes">
+
 
 > Nota: O NestJS ValidationPipe é altamente configurável. Todas as opções de configuração disponíveis estão documentadas no NestJS docs.

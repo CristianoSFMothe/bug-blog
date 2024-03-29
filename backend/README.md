@@ -331,6 +331,26 @@ export class CreateArticleDto {
 
 O `@ApiProperty` os decoradores são obrigados a tornar as propriedades da classe visíveis para o `SwaggerModule`
 
+```bash
+ async create(createArticleDto: CreateArticleDto) {
+    const existingArticle = await this.prisma.article.findUnique({
+      where: {
+        title: createArticleDto.title,
+      },
+    });
+
+    if (existingArticle) {
+      throw new BadRequestException(
+        'The article with that title already exists',
+      );
+    }
+
+    return this.prisma.article.create({
+      data: createArticleDto,
+    });
+  }
+```
+
 ### Definir PATCH /articles/:id endpoint
 
 Este endpoint é para atualizar artigos existentes. O manipulador de rota para este terminal é chamado `update`.

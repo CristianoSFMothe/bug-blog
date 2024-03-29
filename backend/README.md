@@ -11,6 +11,40 @@
 * <a href="https://www.docker.com/" target="_blank">Docker</a> é um conjunto de produtos de plataforma como serviço que usam virtualização de nível de sistema operacional para entregar software em pacotes chamados contêineres.
 * <a href="https://code.visualstudio.com/" target="_blank">Visual Studio Code</a> IDE do utilizada durante a criação do projeto
 
+## Clone o repositório
+
+Você poderá clonar esse projeto ou realizar um fork do mesmo para pode contribuir para melhorias do projeto.
+
+```bash
+# Para realizar o clone
+git clone https://github.com/CristianoSFMothe/bug-blog
+```
+Navegue até o diretório clonado:
+
+1. Instalar dependências:
+
+```bash
+npm install
+```
+
+2. Inicie o banco de dados PostgreSQL com docker:
+
+```bash
+docker-compose up -d
+```
+
+3. Aplicar migrações de banco de dados:
+
+```bash
+npx prisma migrate dev
+```
+
+4. Inicie o projeto:
+
+```bash
+npm run start:dev
+```
+
 ## Gerar o Projeto NestJS
 
 A primeira coisa que precisará é instalar o NestJS CLI. O NestJS CLI é muito útil quando se trabalha com um projeto NestJS. Ele vem com utilitários internos que ajudam você a inicializar, desenvolver e manter seu aplicativo NestJS.
@@ -443,3 +477,69 @@ export class ArticleEntity implements Article {
 Esta é uma implementação do `Article` tipo gerado pelo `Prisma Client`, com `@ApiProperty` decoradores adicionados a cada propriedade.
 
 <img width="1840" alt="response-types" src="https://github.com/CristianoSFMothe/bug-blog/assets/68359459/129c87f1-946b-434c-9e2a-fd3801b4649d">
+
+
+# Validações
+
+Para realizar a validação de entrada, estará usando <a href="https://docs.nestjs.com/pipes" target="_blank">NestJS Pipes</a>. Os `Pipes` operam nos argumentos que estão sendo processados por um manipulador de rotas. O Nest invoca um pipe antes do manipulador de rotas e o pipe recebe os argumentos destinados ao manipulador de rotas. Os pipes podem fazer várias coisas, como validar a entrada, adicionar campos à entrada, etc. Os pipes são semelhantes a <a href="https://docs.nestjs.com/middleware" target="_blank">middleware</a>, mas o escopo dos `pipes é limitado ao processamento de argumentos de entrada.
+
+Os pipes têm dois casos de uso típicos:
+
+* *Validação*: Avalie os dados de entrada e, se válidos, passe-os inalterados; caso contrário, lance uma exceção quando os dados estiverem incorretos.
+* *Transformação*: Transforme os dados de entrada para o formulário desejado (por exemplo, de string para inteiro).
+
+IMAGEM PIPE 1
+
+IMAGEM PIPE 2
+
+## Configurar ValidationPipe globalmente
+
+Para executar a validação de entrada, você estará usando o NestJS incorporado `ValidationPipe`. O `ValidationPipe` fornece uma abordagem conveniente para aplicar regras de validação para todas as cargas úteis recebidas do cliente, onde as regras de validação são declaradas com decoradores da` class-validator` pacote.
+
+```bash
+npm install class-validator class-transformer
+```
+
+Agora importe o `ValidationPipe` no seu main.ts arquivo e use o `app.useGlobalPipes` método para disponibilizá-lo globalmente em seu aplicativo:
+
+```bash
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as dotenv from 'dotenv';
+import { ValidationPipe } from '@nestjs/common';
+
+async function bootstrap() {
+  dotenv.config();
+  const app = await NestFactory.create(AppModule);
+
+  app.useGlobalPipes(new ValidationPipe());
+
+  const config = new DocumentBuilder()
+    .setTitle('bug-blog')
+    .setDescription('Documentação da API do Back-End do Bug Blog')
+    .setVersion('0.1')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('bug-blog', app, document);
+
+  await app.listen(process.env.PORT || 3000);
+}
+bootstrap();
+```
+
+## Adicionar regras de validação para CreateArticleDto
+
+Usar o class-validator pacote para adicionar decoradores de validação CreateArticleDto
+
+1. `title` não pode estar vazio ou com menos de 5 caracteres.
+2. `description` tem que ter um comprimento máximo de 300.
+3. `body` e description não pode estar vazio.
+4. `title`, `description` e `body` deve ser do tipo `string` e `published` deve ser do tipo `boolean`.
+
+Este diagrama explica o que o `ValidationPipe` está fazendo sob o capô para entradas inválidas para o /articles rota:
+
+IMAGEM PIPE 3
+
+> Nota: O NestJS ValidationPipe é altamente configurável. Todas as opções de configuração disponíveis estão documentadas no NestJS docs.

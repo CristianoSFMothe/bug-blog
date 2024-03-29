@@ -8,7 +8,7 @@
 * <a href="https://swagger.io/" target="_blank">Swagger</a> como a ferramenta de documentação da API
 * <a href="https://www.typescriptlang.org/" target="_blank">TypeScript</a> como a linguagem de programação
 * <a href="https://dbeaver.io/download/" target="_blank">DBeaver</a> cliente SQL e uma ferramenta de administração de banco de dados
-* <a href="https://www.docker.com/" target="_blank"></a> Docker é um conjunto de produtos de plataforma como serviço que usam virtualização de nível de sistema operacional para entregar software em pacotes chamados contêineres.
+* <a href="https://www.docker.com/" target="_blank">Docker</a> é um conjunto de produtos de plataforma como serviço que usam virtualização de nível de sistema operacional para entregar software em pacotes chamados contêineres.
 * <a href="https://code.visualstudio.com/" target="_blank">Visual Studio Code</a> IDE do utilizada durante a criação do projeto
 
 ## Gerar o Projeto NestJS

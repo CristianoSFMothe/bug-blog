@@ -245,7 +245,9 @@ Responda às perguntas de acordo:
 
 Deverá ser criado um novo arquivo dentro `src/articles` diretório com todo o boilerplate para seus endpoints REST
 
-IMAGEM ARTICLE CRUD
+<img src="https://github.com/CristianoSFMothe/bug-blog/assets/68359459/32b25879-ca5d-4c84-adab-101742547ae8" alt="Swagger CRUD Article">
+
+
 
 O `SwaggerModule` pesquisas para todos `@Body()`, `@Query()`, e `@Param()` decoradores nos manipuladores de rotas para gerar esta página da API.
 
@@ -440,4 +442,4 @@ export class ArticleEntity implements Article {
 
 Esta é uma implementação do `Article` tipo gerado pelo `Prisma Client`, com `@ApiProperty` decoradores adicionados a cada propriedade.
 
-IMAGEM RESPONSE TYPES
+<img width="1840" alt="response-types" src="https://github.com/CristianoSFMothe/bug-blog/assets/68359459/129c87f1-946b-434c-9e2a-fd3801b4649d">

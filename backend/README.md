@@ -55,9 +55,13 @@ Pode realizar a instalação da CLI do NestJs de forma global, com o comando aba
 npm i -g @nestjs/cli
 ```
 
-Ou executar via o `NPX` (Node Package Manager) que permite executar pacotes diretamente. Ele é usado para executar pacotes sem precisar instalá-los globalmente. Isso é útil para executar comandos de pacotes específicos apenas uma vez, sem precisar poluir o ambiente global com esses pacotes.
+Ou executar via o `npm` (Node Package Manager) que permite executar pacotes diretamente. Ele é usado para executar pacotes sem precisar instalá-los globalmente. Isso é útil para executar comandos de pacotes específicos apenas uma vez, sem precisar poluir o ambiente global com esses pacotes.
 
 ```bash
+# Caso tenha instalado a CLI do NestJs globlamente
+npm nest new project_name
+
+# Caso não tenha instalado a CLI do NestJs globlamente
 npx @nestjs/cli new project_name
 ```
 
@@ -547,3 +551,142 @@ Este diagrama explica o que o `ValidationPipe` está fazendo sob o capô para en
 
 
 > Nota: O NestJS ValidationPipe é altamente configurável. Todas as opções de configuração disponíveis estão documentadas no NestJS docs.
+
+# Adicionar um User modelo para o banco de dados
+
+Atualmente, o banco de dados tem apenas um único modelo: `Article`. Um artigo pode ser escrito por um usuário registrado. Então, vamos adicionar um `User`
+
+```bash
+
+model Article {
+  id          String   @id @default(uuid())
+  title       String   @unique
+  description String?
+  body        String
+  published   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  author   User?   @relation(fields: [authorId], references: [id])
+  authorId String?
+
+  @@map("articles")
+}
+
+model User {
+  id        String    @id @default(uuid())
+  name      String?
+  email     String    @unique
+  password  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  articles  Article[]
+
+  @@map("users")
+}
+
+```
+
+Agora, para aplicar as alterações ao seu banco de dados, execute o comando de migração:
+
+```bash
+npx prisma migrate dev --name "add-table-user"
+```
+
+## Adicionar um authorId campo para ArticleEntity
+
+Depois de executar a migração, você deve ter notado um novo erro TypeScript. O `ArticleEntity` classe implements o Article tipo gerado pelo Prisma. O Article o tipo tem um novo `authorId` campo, mas o `ArticleEntity` classe não tem esse campo definido. O TypeScript reconhece essa incompatibilidade nos tipos e está gerando um erro. Você corrigirá esse erro adicionando o `authorId` campo para o `ArticleEntity` classe.
+
+Dentro `ArticleEntity` adicionar um novo `authorId` campo:
+
+```bash
+@ApiProperty({ required: false, nullable: true })
+  authorId: number | null;
+```
+
+# Implementar endpoints CRUD para usuários
+
+Implementar o `/users` recursos na sua API REST. Isso permitirá que execute operações CRUD nos usuários no banco de dados.
+
+## Gerar novo users Recurso REST
+
+Para gerar um novo recurso REST para `users` execute o seguinte comando:
+
+```bash
+npx nest generate resource
+```
+
+Receberá algumas instruções CLI. Responda às perguntas de acordo:
+
+1. What name would you like to use for this resource (plural, e.g., "users")? `users`
+2. What transport layer do you use? `API REST`
+3. Would you like to generate CRUD entry points? `Yes`
+
+## Adicionar PrismaClient ao Users módulo
+
+Para acessar `PrismaClient` dentro do `Users` módulo, você deve adicionar o PrismaModule como uma importação. Adicione o seguinte `imports` para `UsersModule`.
+
+Com injetar pode `PrismaService` dentro do `UsersService` e usá-lo para acessar o banco de dados. Para fazer isso, adicione um construtor para `users.service.ts`
+
+## Definir o User classes de entidade e DTO
+
+Assim como `ArticleEntity`, que definir um `UserEntity` classe que será usada para representar o User entidade na camada da API. Definir o `UserEntity` classe no `user.entity.ts` arquivo da seguinte forma:
+
+```bash
+import { ApiProperty } from '@nestjs/swagger';
+import { User } from '@prisma/client';
+
+export class UserEntity implements User {
+  @ApiProperty()
+  id: number;
+
+  @ApiProperty()
+  createdAt: Date;
+
+  @ApiProperty()
+  updatedAt: Date;
+
+  @ApiProperty()
+  name: string;
+
+  @ApiProperty()
+  email: string;
+
+  @ApiProperty()
+  password: string;
+}
+```
+
+Um `DTO` (Data Transfer Object) é um objeto que define como os dados serão enviados pela rede. Você precisará implementar o `CreateUserDto` e `UpdateUserDto` classes para definir os dados que serão enviados para a API ao criar e atualizar um usuário, respectivamente.
+
+```bash
+import { ApiProperty } from '@nestjs/swagger';
+import { IsNotEmpty, IsString, MinLength } from 'class-validator';
+
+export class CreateUserDto {
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty()
+  name: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @ApiProperty()
+  email: string;
+
+  @IsString()
+  @IsNotEmpty()
+  @MinLength(6)
+  @ApiProperty()
+  password: string;
+}
+```
+
+### Definir o UsersService classe
+
+O `UsersService` é responsável por modificar e buscar dados do banco de dados usando o Prisma Client e fornecê-los ao `UsersController`.
+
+### Definir o UsersController classe
+
+O `UsersController` é responsável por lidar com solicitações e respostas ao users pontos finais. Ele vai alavancar o `UsersService` para acessar o banco de dados, o `UserEntity` para definir o corpo de resposta e o `CreateUserDto` e `UpdateUserDto` para definir o corpo da solicitação.
+

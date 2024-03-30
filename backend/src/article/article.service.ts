@@ -49,6 +49,9 @@ export class ArticleService {
       where: {
         id,
       },
+      include: {
+        author: true,
+      },
     });
 
     if (!article) {

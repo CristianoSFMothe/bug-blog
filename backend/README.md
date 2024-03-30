@@ -690,3 +690,6 @@ O `UsersService` é responsável por modificar e buscar dados do banco de dados 
 
 O `UsersController` é responsável por lidar com solicitações e respostas ao users pontos finais. Ele vai alavancar o `UsersService` para acessar o banco de dados, o `UserEntity` para definir o corpo de resposta e o `CreateUserDto` e `UpdateUserDto` para definir o corpo da solicitação.
 
+## Retornando o autor junto com um artigo
+
+Atualmente, o endpoint `GET /articles/:id` não retorna o `author` de um artigo, apenas o `authorId`. Para buscar o author você tem que fazer uma solicitação adicional para o endpoint `GET /users/:id`. Isso não é ideal se você precisar do artigo e do autor, porque precisa fazer duas solicitações de API. Podemos melhorar isso retornando o author junto com o Article objeto.

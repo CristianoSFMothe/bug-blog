@@ -14,6 +14,7 @@ async function bootstrap() {
     .setTitle('bug-blog')
     .setDescription('Documentação da API do Back-End do Bug Blog')
     .setVersion('0.1')
+    .addBearerAuth()
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

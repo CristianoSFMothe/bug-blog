@@ -693,3 +693,245 @@ O `UsersController` é responsável por lidar com solicitações e respostas ao 
 ## Retornando o autor junto com um artigo
 
 Atualmente, o endpoint `GET /articles/:id` não retorna o `author` de um artigo, apenas o `authorId`. Para buscar o author você tem que fazer uma solicitação adicional para o endpoint `GET /users/:id`. Isso não é ideal se você precisar do artigo e do autor, porque precisa fazer duas solicitações de API. Podemos melhorar isso retornando o author junto com o Article objeto.
+
+# Implementar autenticação na sua API REST
+
+Existem dois tipos principais de autenticação usados na web: baseado em sessão autenticação e baseado em token autenticação. Nesse caso iremos utilizar a autenticação baseada em token usando `Tokens da Web JSON` ( JWT ).
+
+crie um novo `auth` módulo em sua aplicação. Execute o seguinte comando para gerar um novo módulo:
+
+```bash
+npx nest generate resource
+```
+
+Receberá algumas instruções CLI. Responda às perguntas de acordo:
+
+1. What name would you like to use for this resource (plural, e.g., "users")? `auth`
+2. What transport layer do you use? `API REST`
+3. Would you like to generate CRUD entry points? `No`
+
+## Instalar e configurar passport
+
+`passport` é uma biblioteca de autenticação popular para aplicativos Node.js. É altamente configurável e suporta uma ampla gama de estratégias de autenticação. Ele deve ser usado com o <a href="https://expressjs.com/" target="_blank"></a> framework web, no qual o NestJS é construído. O NestJS tem uma integração de primeira parte com `passport` chamado `@nestjs/passport` isso torna mais fácil de usar em seu aplicativo NestJS.
+
+```bash
+# Instalar o Nestjs Passport, JWT e Passport JWT
+npm install --save @nestjs/passport passport @nestjs/jwt passport-jwt
+
+# Instalar as tipage o Nestjs Passport JWT
+npm install --save-dev @types/passport-jwt
+```
+
+## Configurar passport em sua aplicação
+
+Configurar passport em sua aplicação. Abra o `src/auth.module.ts` arquive e adicione o seguinte código:
+
+```bash
+import { Module } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { PrismaModule } from 'src/prisma/prisma.module';
+import { PassportModule } from '@nestjs/passport';
+import { JwtModule } from '@nestjs/jwt';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
+
+@Module({
+  imports: [
+    PrismaModule,
+    PassportModule,
+    JwtModule.register({
+      secret: process.env.JWT_SECRET,
+      signOptions: { expiresIn: '7d' },
+    }),
+  ],
+  controllers: [AuthController],
+  providers: [AuthService],
+})
+export class AuthModule {}
+
+```
+
+O `@nestjs/passpor`t o módulo fornece um `PassportModule` que você pode importar para o seu aplicativo. O `PassportModule` é um invólucro em torno do passport biblioteca que fornece utilitários específicos do NestJS. Você pode ler mais sobre o `PassportModule` no <a href="https://docs.nestjs.com/recipes/passport" target="_blank">documentação oficial</a>.
+
+O `JwtModule` é um invólucro em torno do jsonwebtoken biblioteca. O secret fornece uma chave secreta que é usada para assinar os JWTs. O `expiresIn` objeto define o tempo de expiração dos JWTs.
+
+## Implementar um endpoint POST /auth/login 
+
+O `POST /login` o endpoint será usado para autenticar usuários. Ele aceitará um nome de usuário e senha e retornará um JWT se as credenciais forem válidas. Primeiro você cria um `LoginDto` classe que definirá a forma do corpo da solicitação.
+
+Crie um novo arquivo chamado `login.dto.ts` dentro do `src/auth/dto` diretório:
+
+```bash
+# Criar o diretório
+mkdir src/auth/dto
+
+# Criar o arquivo
+touch src/auth/dto/login.dto.ts
+```
+
+Definir um novo `AuthEntity` isso descreverá a forma da carga útil JWT. Crie um novo arquivo chamado auth.entity.ts dentro do `src/auth/entity` diretório:
+
+```bash
+# Criar o diretório
+mkdir src/auth/entity
+
+# Criar o arquivo
+touch src/auth/entity/auth.entity.ts
+```
+
+```bash
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { PrismaService } from './../prisma/prisma.service';
+import { JwtService } from '@nestjs/jwt';
+import { AuthEntity } from './entity/auth.entity';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
+
+  async login(email: string, password: string): Promise<AuthEntity> {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        email: email,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('No user found for email');
+    }
+
+    const isPasswordValid = user.password === password;
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid email or password');
+    }
+
+    return {
+      accessToken: this.jwtService.sign({ userId: user.id }),
+      email: user.email,
+    };
+  }
+}
+```
+
+O `login` o método primeiro busca um usuário com o email fornecido. Se nenhum usuário for encontrado, ele lança um `NotFoundException`. Se um usuário for encontrado, ele verifica se a senha está correta. Se a senha estiver incorreta, ela lança um `UnauthorizedException`. Se a senha estiver correta, ela gera um JWT contendo o ID do usuário e retorna-o.
+
+### Implementar a estratégia de autenticação JWT
+
+No Passaporte, a <a href="https://www.passportjs.org/concepts/authentication/strategies/" target="_blank">estratégia</a> é responsável pela autenticação de solicitações, que realiza implementando um mecanismo de autenticação.
+
+Não utilizaremos o `passport` pacote diretamente, mas sim interagir com o pacote wrapper `@nestjs/passport`, que chamará o `passport` pacote sob o capô. Para configurar uma estratégia com `@nestjs/passport`, é necessário criar uma classe que estenda o `PassportStrategy` classe. Você precisará fazer duas coisas principais nesta classe:
+
+1. Não passará opções e configurações específicas da estratégia JWT para o `super()` método no construtor.
+2. A `validate()` método de retorno de chamada que irá interagir com seu banco de dados para buscar um usuário com base na carga útil JWT. Se um usuário for encontrado, o `validate()` espera-se que o método retorne o objeto do usuário.
+
+Primeiro crie um novo arquivo chamado `jwt.strategy.ts` dentro do `src/auth/strategy` diretório:
+
+```bash
+# Criar o diretório
+mkdir src/auth/strategy 
+
+# criar o arquivo
+touch src/auth/strategy/jwt.strategy.ts
+```
+
+Agora implementar o `JwtStrategy` classe:
+
+```bash
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { UsersService } from 'src/users/users.service';
+import * as dotenv from 'dotenv';
+
+dotenv.config();
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+  constructor(private usersService: UsersService) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      secretOrKey: process.env.JWT_SECRET,
+    });
+  }
+
+  async validate(payload: { userId: string }) {
+    const user = await this.usersService.findOne(payload.userId);
+
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+
+    return user;
+  }
+}
+```
+
+Criou um `JwtStrategy` classe que estende o `PassportStrategy` classe. O `PassportStrategy` classe leva dois argumentos: uma implementação de estratégia e o nome da estratégia. Aqui você está usando uma estratégia predefinida da biblioteca `passport-jwt`.
+
+Adicione o novo `JwtStrategy` como um provedor no `AuthModule`.
+
+Agora o `JwtStrategy` pode ser usado por outros módulos. Você também adicionou o `UsersModule` no imports, porque o `UsersService` está sendo usado no `JwtStrategy` classe.
+
+Fazer `UsersService` acessível no `JwtStrategy` classe, você também precisa adicioná-lo no exports do `UsersModule`
+
+## Implementar o protetor de autenticação JWT
+
+<a href="https://docs.nestjs.com/guards" target="_blank">Guards</a> são uma construção NestJS que determina se uma solicitação deve ser autorizada a prosseguir ou não. Nesta seção, você implementará um costume `JwtAuthGuard` isso será usado para proteger rotas que exigem autenticação.
+
+Crie um novo arquivo chamado `jwt-auth.guard.ts` dentro do `src/auth` diretório:
+
+```bash
+# Criar o diretório
+mkdir src/auth/guards
+
+# Criar o arquivo
+touch src/auth/guards/jwt-auth.guard.ts
+```
+
+Agora implementar o JwtAuthGuard classe:
+
+```bash
+import { Injectable } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {}
+```
+
+O `AuthGuard` a classe espera o nome de uma estratégia. Nesse caso, estamos usando o `JwtStrategy`, que é nomeada `jwt`.
+
+Agora podemos usar esse protetor como decorador para proteger seus endpoints. Adicione o `JwtAuthGuard` para rotas no `UsersController`.
+
+## Integrar autenticação no Swagger
+
+Adicionar um `@ApiBearerAuth()` decorador para nos `controllers` para indicar que a autenticação é necessária no Swagger.
+
+Adicionar o `.addBearerAuth()` chamada de método para o `SwaggerModule` configuração em `main.ts`.
+
+# Hashing senhas
+
+Atualmente, o `User.password` o campo é armazenado em texto simples. Este é um risco de segurança, porque se o banco de dados está comprometido, assim são todas as senhas. Para corrigir isso, você pode hash as senhas antes de armazená-los no banco de dados.
+
+Utilizar o `bcrypt` biblioteca de criptografia para hash de senhas. Instale-o com `npm`:
+
+```bash
+# Instalar o bcrypt
+npm install bcrypt
+
+# Instalar as tipagens do bcrypt
+npm install --save-dev @types/bcrypt
+```
+
+Atualizar o create e update métodos no `UsersService` para hash a senha antes de armazená-la no banco de dados
+
+Atualizar o `login` método para usar senhas com hash

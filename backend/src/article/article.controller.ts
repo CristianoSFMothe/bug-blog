@@ -19,6 +19,7 @@ import {
 } from '@nestjs/swagger';
 import { ArticleEntity } from './entities/article.entity';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { Article } from '@prisma/client';
 
 @ApiTags('articles')
 @Controller('article')
@@ -50,15 +51,15 @@ export class ArticleController {
     return await this.articleService.findOne(id);
   }
 
-  @Get('drafts')
+  @Get('/drafts-all')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOkResponse({
     type: ArticleEntity,
     isArray: true,
   })
-  async findDrafts() {
-    return await this.articleService.findDrafts();
+  async findDrafts(): Promise<Article[]> {
+    return this.articleService.findDrafts();
   }
 
   @Patch(':id')

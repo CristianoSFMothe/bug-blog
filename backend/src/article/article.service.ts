@@ -6,6 +6,7 @@ import {
 import { CreateArticleDto } from './dto/create-article.dto';
 import { UpdateArticleDto } from './dto/update-article.dto';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { Article } from '@prisma/client';
 
 @Injectable()
 export class ArticleService {
@@ -61,7 +62,7 @@ export class ArticleService {
     return article;
   }
 
-  async findDrafts() {
+  async findDrafts(): Promise<Article[]> {
     return await this.prisma.article.findMany({
       where: {
         published: false,

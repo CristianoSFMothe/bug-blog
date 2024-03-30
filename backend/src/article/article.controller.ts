@@ -51,7 +51,7 @@ export class ArticleController {
     return await this.articleService.findOne(id);
   }
 
-  @Get('/drafts-all')
+  @Get('drafts/all')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOkResponse({

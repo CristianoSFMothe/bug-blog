@@ -67,6 +67,9 @@ export class ArticleService {
       where: {
         published: false,
       },
+      include: {
+        author: true,
+      },
     });
   }
 
